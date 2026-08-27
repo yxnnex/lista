@@ -13,7 +13,6 @@
         }
 
         body {
-            /* Fondo que se repite perfectamente en patrón */
             background-image: url('fondolista.png');
             background-repeat: repeat;
             background-size: 320px auto;
@@ -26,19 +25,18 @@
             color: #4a3b4e;
         }
 
-        /* Tarjeta principal súper traslúcida y flotante */
         .container {
             width: 100%;
             max-width: 480px;
-            background: rgba(255, 255, 255, 0.35);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 24px;
-            border: 2px solid rgba(255, 255, 255, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.7);
             padding: 25px;
             box-shadow: 
-                0 20px 40px rgba(186, 115, 142, 0.2),
-                0 8px 16px rgba(0, 0, 0, 0.05);
+                0 20px 40px rgba(186, 115, 142, 0.25),
+                0 8px 16px rgba(0, 0, 0, 0.08);
             margin-top: 10px;
             margin-bottom: 20px;
         }
@@ -59,8 +57,8 @@
         }
 
         select, input[type="text"] {
-            background: rgba(255, 255, 255, 0.5);
-            border: 1.5px solid rgba(230, 180, 200, 0.6);
+            background: rgba(255, 255, 255, 0.65);
+            border: 1.5px solid rgba(230, 180, 200, 0.7);
             border-radius: 14px;
             padding: 12px 15px;
             color: #5a3e51;
@@ -118,4 +116,216 @@
             letter-spacing: 1.2px;
             border-bottom: 2px dashed rgba(220, 160, 185, 0.5);
             padding-bottom: 6px;
-            color: #9c5c
+            color: #9c5c7d;
+            font-weight: 700;
+        }
+
+        ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 12px 15px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(160, 100, 130, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 7px;
+            border: 2px solid #d896b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+
+        .checkbox::after {
+            content: '✓';
+            font-weight: bold;
+            display: none;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .item-text {
+            font-size: 1rem;
+            color: #4a3b4e;
+            transition: all 0.3s ease;
+        }
+
+        li.completed {
+            background: rgba(245, 235, 240, 0.45);
+            border-color: transparent;
+            box-shadow: none;
+            order: 99;
+        }
+
+        li.completed .checkbox {
+            background: #73c8a9;
+            border-color: #73c8a9;
+        }
+
+        li.completed .checkbox::after {
+            display: block;
+        }
+
+        li.completed .item-text {
+            text-decoration: line-through;
+            font-weight: bold;
+            color: #997b8c;
+            opacity: 0.7;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #c98ba5;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+
+        .delete-btn:hover {
+            color: #e65c5c;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Mi Lista 🛒</h1>
+        
+        <div class="input-group">
+            <select id="categorySelect">
+                <option value="Supermercado">🛒 Super</option>
+                <option value="Viajes">🧳 Viaje</option>
+                <option value="Ropa">👕 Ropa</option>
+                <option value="Varios">📌 Varios</option>
+            </select>
+            <input type="text" id="itemInput" placeholder="Agregar elemento..." onkeypress="if(event.key==='Enter') window.addItem()">
+            <button class="btn-add" onclick="window.addItem()">Agregar</button>
+        </div>
+
+        <div id="listsContainer"></div>
+    </div>
+
+    <!-- Módulos de Firebase -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFgIK9iOHzeFIbIHTs2yhyczgkvM18mPA",
+            authDomain: "milista-74731.firebaseapp.com",
+            databaseURL: "https://milista-74731-default-rtdb.firebaseio.com",
+            projectId: "milista-74731",
+            storageBucket: "milista-74731.firebasestorage.app",
+            messagingSenderId: "1074854652654",
+            appId: "1:1074854652654:web:ed581010a236e8d2d3e1ff"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const itemsRef = ref(db, 'items');
+
+        let rawItems = {};
+
+        onValue(itemsRef, (snapshot) => {
+            rawItems = snapshot.val() || {};
+            render();
+        });
+
+        window.addItem = function() {
+            const textInput = document.getElementById('itemInput');
+            const categorySelect = document.getElementById('categorySelect');
+            const text = textInput.value.trim();
+            const category = categorySelect.value;
+
+            if (text === '') return;
+
+            push(itemsRef, {
+                text: text,
+                category: category,
+                completed: false
+            });
+
+            textInput.value = '';
+        };
+
+        window.toggleItem = function(id) {
+            const currentStatus = rawItems[id].completed;
+            update(ref(db, 'items/' + id), {
+                completed: !currentStatus
+            });
+        };
+
+        window.deleteItem = function(id) {
+            remove(ref(db, 'items/' + id));
+        };
+
+        function render() {
+            const container = document.getElementById('listsContainer');
+            container.innerHTML = '';
+
+            const itemList = Object.keys(rawItems).map(key => ({
+                id: key,
+                ...rawItems[key]
+            }));
+
+            const categories = [...new Set(itemList.map(i => i.category))];
+
+            categories.forEach(cat => {
+                const section = document.createElement('div');
+                section.className = 'category-section';
+
+                const title = document.createElement('div');
+                title.className = 'category-title';
+                title.textContent = cat;
+                section.appendChild(title);
+
+                const ul = document.createElement('ul');
+
+                const catItems = itemList.filter(i => i.category === cat);
+                
+                catItems.forEach(item => {
+                    const li = document.createElement('li');
+                    if (item.completed) li.classList.add('completed');
+
+                    li.innerHTML = `
+                        <div class="item-content" onclick="window.toggleItem('${item.id}')">
+                            <div class="checkbox"></div>
+                            <span class="item-text">${item.text}</span>
+                        </div>
+                        <button class="delete-btn" onclick="window.deleteItem('${item.id}')">✕</button>
+                    `;
+                    ul.appendChild(li);
+                });
+
+                section.appendChild(ul);
+                container.appendChild(section);
+            });
+        }
+    </script>
+</body>
+</html>
