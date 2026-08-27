@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Lista en la Nube</title>
+    <!-- Librería Tesseract.js para OCR (Escanear texto de imágenes) -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -52,7 +54,7 @@
         .input-group {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
             flex-wrap: wrap;
         }
 
@@ -86,8 +88,14 @@
             color: #b592a5;
         }
 
+        .btn-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
         button.btn-add {
-            width: 100%;
+            flex: 2;
             background: #e88ab5;
             border: none;
             color: #fff;
@@ -103,6 +111,39 @@
         button.btn-add:hover {
             background: #df7aa8;
             transform: translateY(-1px);
+        }
+
+        /* Botón de la cámara */
+        .btn-camera {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1.5px solid rgba(230, 180, 200, 0.8);
+            color: #7a4b63;
+            padding: 13px;
+            border-radius: 14px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 10px rgba(160, 100, 130, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .btn-camera:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Indicador de carga de escaneo */
+        #ocrStatus {
+            display: none;
+            text-align: center;
+            font-size: 0.88rem;
+            color: #9c5c7d;
+            margin-bottom: 15px;
+            font-weight: 600;
         }
 
         .category-section {
@@ -224,8 +265,19 @@
                 <option value="Varios">📌 Varios</option>
             </select>
             <input type="text" id="itemInput" placeholder="Agregar elemento..." onkeypress="if(event.key==='Enter') window.addItem()">
-            <button class="btn-add" onclick="window.addItem()">Agregar</button>
         </div>
+
+        <div class="btn-actions">
+            <button class="btn-add" onclick="window.addItem()">Agregar</button>
+            <button class="btn-camera" onclick="document.getElementById('cameraInput').click()">
+                📷 Escanear
+            </button>
+        </div>
+
+        <!-- Input oculto que activa la cámara del celular -->
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="window.scanList(event)">
+
+        <div id="ocrStatus">✨ Leyendo la foto...</div>
 
         <div id="listsContainer"></div>
     </div>
@@ -256,10 +308,10 @@
             render();
         });
 
-        window.addItem = function() {
+        window.addItem = function(customText = null) {
             const textInput = document.getElementById('itemInput');
             const categorySelect = document.getElementById('categorySelect');
-            const text = textInput.value.trim();
+            const text = customText || textInput.value.trim();
             const category = categorySelect.value;
 
             if (text === '') return;
@@ -270,7 +322,39 @@
                 completed: false
             });
 
-            textInput.value = '';
+            if (!customText) textInput.value = '';
+        };
+
+        window.scanList = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('ocrStatus');
+            status.style.display = 'block';
+            status.textContent = '🔍 Escaneando imagen...';
+
+            try {
+                // Reconocimiento de texto en español con Tesseract.js
+                const result = await Tesseract.recognize(file, 'spa');
+                const lines = result.data.text.split('\n');
+
+                let count = 0;
+                lines.forEach(line => {
+                    const cleanLine = line.trim().replace(/^[-*•\d.\s]+/, ''); // Quita guiones o números iniciales
+                    if (cleanLine.length > 1) {
+                        window.addItem(cleanLine);
+                        count++;
+                    }
+                });
+
+                status.textContent = `✨ ¡Listo! Se agregaron ${count} elementos.`;
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            } catch (error) {
+                status.textContent = '❌ Error al leer la foto. Intenta con más luz.';
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            }
+
+            event.target.value = ''; // Resetea el input para poder tomar otra foto
         };
 
         window.toggleItem = function(id) {
