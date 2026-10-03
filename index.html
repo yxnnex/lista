@@ -3,374 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Precios Afterlife y Control de Horas</title>
+    <title>Mi Lista en la Nube</title>
+    <!-- OCR Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
-        :root {
-            --card-bg: rgba(30, 30, 30, 0.85); /* Ligeramente translúcido para que luzca el fondo */
-            --text-color: #e0e0e0;
-            --accent-color: #bb86fc;
-            --accent-hover: #3700b3;
-            --border-color: #333;
-        }
-
-        /* --- FONDO DINÁMICO --- */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: var(--text-color);
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-image: url('fondolista.png');
+            background-repeat: repeat;
+            background-size: 320px auto;
+            background-position: top left;
             min-height: 100vh;
-            background: linear-gradient(135deg, #0d0d0d, #1a1a2e, #16213e, #0f3460);
-            background-size: 400% 400%;
-            animation: gradientAnimation 15s ease infinite;
-            position: relative;
-            overflow-x: hidden;
-        }
-
-        @keyframes gradientAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        /* Efecto de partículas/luces flotantes en el fondo */
-        body::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-image: radial-gradient(circle, rgba(187, 134, 252, 0.1) 1px, transparent 1px);
-            background-size: 40px 40px;
-            z-index: -1;
-            opacity: 0.5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            color: #4a3b4e;
         }
 
         .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            position: relative;
-            z-index: 1;
-        }
-        h1, h2 {
-            text-align: center;
-            color: var(--accent-color);
-        }
-        h1 {
-            margin-bottom: 25px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .main-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-            align-items: start;
-        }
-        @media (max-width: 900px) {
-            .main-grid { grid-template-columns: 1fr; }
-        }
-        .prices-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-        @media (max-width: 768px) {
-            .prices-container { grid-template-columns: 1fr; }
-        }
-        .card {
-            background-color: var(--card-bg);
-            backdrop-filter: blur(8px);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 480px;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px;
+            border: 2px solid rgba(255, 255, 255, 0.7);
+            padding: 25px;
+            box-shadow: 
+                0 20px 40px rgba(186, 115, 142, 0.25),
+                0 8px 16px rgba(0, 0, 0, 0.08);
+            margin-top: 10px;
             margin-bottom: 20px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 0.9rem;
-        }
-        th {
-            color: var(--accent-color);
-        }
-        input[type="number"] {
-            width: 50px;
-            padding: 4px;
-            background: rgba(42, 42, 42, 0.9);
-            border: 1px solid var(--border-color);
-            color: #fff;
-            border-radius: 4px;
+
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
             text-align: center;
+            font-weight: 700;
+            color: #7a4b63;
         }
-        .total-section {
-            background-color: var(--card-bg);
-            backdrop-filter: blur(8px);
-            border: 2px solid var(--accent-color);
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            height: fit-content;
-        }
-        .total-amount {
-            font-size: 2.2rem;
-            color: #03dac6;
-            font-weight: bold;
-            margin: 15px 0;
-            text-shadow: 0 0 10px rgba(3, 218, 198, 0.3);
-        }
-        .timer-display {
-            font-size: 2.5rem;
-            color: #03dac6;
-            font-weight: bold;
-            text-align: center;
-            font-family: monospace;
-            margin: 15px 0;
-            text-shadow: 0 0 10px rgba(3, 218, 198, 0.3);
-        }
-        .btn-group {
+
+        .input-group {
             display: flex;
             gap: 10px;
-            justify-content: center;
+            margin-bottom: 12px;
             flex-wrap: wrap;
-            margin-top: 15px;
         }
-        .btn {
-            background-color: var(--accent-color);
-            color: #121212;
-            border: none;
-            padding: 8px 15px;
-            font-weight: bold;
-            border-radius: 4px;
+
+        select, input[type="text"] {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1.5px solid rgba(230, 180, 200, 0.7);
+            border-radius: 14px;
+            padding: 12px 15px;
+            color: #5a3e51;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        select {
+            flex: 1;
+            min-width: 130px;
             cursor: pointer;
-            transition: background 0.2s;
         }
-        .btn:hover {
-            background-color: #03dac6;
+
+        select option {
+            background: #fff;
+            color: #5a3e51;
         }
-        .btn-danger {
-            background-color: #cf6679;
-            color: #121212;
+
+        input[type="text"] {
+            flex: 2;
+            min-width: 180px;
         }
-        .btn-danger:hover {
-            background-color: #ff8b9e;
+
+        input[type="text"]::placeholder {
+            color: #b592a5;
         }
-        .note {
-            font-size: 0.85rem;
-            color: #ccc;
-            margin-top: 25px;
+
+        .btn-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button.btn-add {
+            flex: 2;
+            background: #e88ab5;
+            border: none;
+            color: #fff;
+            padding: 13px;
+            border-radius: 14px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(232, 138, 181, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        button.btn-add:hover {
+            background: #df7aa8;
+            transform: translateY(-1px);
+        }
+
+        .btn-camera {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1.5px solid rgba(230, 180, 200, 0.8);
+            color: #7a4b63;
+            padding: 13px;
+            border-radius: 14px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            box-shadow: 0 4px 10px rgba(160, 100, 130, 0.08);
+            transition: all 0.2s ease;
+        }
+
+        .btn-camera:hover {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        #ocrStatus {
+            display: none;
             text-align: center;
-            font-style: italic;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            font-size: 0.88rem;
+            color: #9c5c7d;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .category-section {
+            margin-top: 20px;
+        }
+
+        .category-title {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            border-bottom: 2px dashed rgba(220, 160, 185, 0.5);
+            padding-bottom: 6px;
+            color: #9c5c7d;
+            font-weight: 700;
+        }
+
+        ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        li {
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            padding: 12px 15px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 10px rgba(160, 100, 130, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .item-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            flex-grow: 1;
+        }
+
+        .checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 7px;
+            border: 2px solid #d896b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+
+        .checkbox::after {
+            content: '✓';
+            font-weight: bold;
+            display: none;
+            color: #fff;
+            font-size: 0.9rem;
+        }
+
+        .item-text {
+            font-size: 1rem;
+            color: #4a3b4e;
+            transition: all 0.3s ease;
+        }
+
+        li.completed {
+            background: rgba(245, 235, 240, 0.45);
+            border-color: transparent;
+            box-shadow: none;
+            order: 99;
+        }
+
+        li.completed .checkbox {
+            background: #73c8a9;
+            border-color: #73c8a9;
+        }
+
+        li.completed .checkbox::after {
+            display: block;
+        }
+
+        li.completed .item-text {
+            text-decoration: line-through;
+            font-weight: bold;
+            color: #997b8c;
+            opacity: 0.7;
+        }
+
+        .delete-btn {
+            background: transparent;
+            border: none;
+            color: #c98ba5;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+
+        .delete-btn:hover {
+            color: #e65c5c;
         }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>PRECIOS AFTERLIFE Y HORAS</h1>
-
-    <!-- SECCIÓN CENTRAL: Precios / Calculadora (Izquierda) y Total (Derecha) -->
-    <div class="main-grid">
+    <div class="container">
+        <h1>Mi Lista 🛒</h1>
         
-        <!-- Columna Izquierda: Precios y Calculadora -->
-        <div class="prices-container">
-            <!-- Lista de Precios Estática -->
-            <div class="card" style="margin-bottom: 0;">
-                <h2>Lista de Precios</h2>
-                <table>
-                    <tr><th>Concepto</th><th>Precio</th></tr>
-                    <tr><td>Reparación básica (1 motor, 3 carrocería)</td><td>$150</td></tr>
-                    <tr><td>Reparación full</td><td>$1000</td></tr>
-                    <tr><td>Ganzúa normal</td><td>$350</td></tr>
-                    <tr><td>Ganzúa avanzada (Materiales +)</td><td>$500</td></tr>
-                    <tr><td>Kit de placas</td><td>Placa vieja + propina</td></tr>
-                    <tr><td>Paño de microfibra</td><td>$150</td></tr>
-                    <tr><td>Kit de reparación normal</td><td>$250</td></tr>
-                    <tr><td>Kit de reparación avanzado</td><td>$700</td></tr>
-                    <tr><td>Gato</td><td>$300</td></tr>
-                    <tr><td>Neumáticos de drift/normales (c/u)</td><td>$350</td></tr>
-                    <tr><td>Puertas, neumático, capot, baúl (c/u)</td><td>$30</td></tr>
-                    <tr><td>Piezas separadas (c/u) <br><small>embrague, radiador, tanque, frenos, transmisión</small></td><td>$300</td></tr>
-                </table>
-            </div>
-
-            <!-- Calculadora de Totales -->
-            <div class="card" style="margin-bottom: 0;">
-                <h2>Calculadora de Cobro</h2>
-                <p style="font-size: 0.85rem;">Selecciona la cantidad:</p>
-                <table>
-                    <tr><th>Ítem</th><th>Precio</th><th>Cant.</th></tr>
-                    <tr><td>Rep. Básica</td><td>$150</td><td><input type="number" class="item-calc" data-price="150" value="0" min="0"></td></tr>
-                    <tr><td>Rep. Full</td><td>$1000</td><td><input type="number" class="item-calc" data-price="1000" value="0" min="0"></td></tr>
-                    <tr><td>Ganzúa Normal</td><td>$350</td><td><input type="number" class="item-calc" data-price="350" value="0" min="0"></td></tr>
-                    <tr><td>Ganzúa Avanzada</td><td>$500</td><td><input type="number" class="item-calc" data-price="500" value="0" min="0"></td></tr>
-                    <tr><td>Paño Microfibra</td><td>$150</td><td><input type="number" class="item-calc" data-price="150" value="0" min="0"></td></tr>
-                    <tr><td>Kit Rep. Normal</td><td>$250</td><td><input type="number" class="item-calc" data-price="250" value="0" min="0"></td></tr>
-                    <tr><td>Kit Rep. Avanzado</td><td>$700</td><td><input type="number" class="item-calc" data-price="700" value="0" min="0"></td></tr>
-                    <tr><td>Gato</td><td>$300</td><td><input type="number" class="item-calc" data-price="300" value="0" min="0"></td></tr>
-                    <tr><td>Neumáticos Drift/Norm.</td><td>$350</td><td><input type="number" class="item-calc" data-price="350" value="0" min="0"></td></tr>
-                    <tr><td>Puerta / Capot / Baúl / Neum.</td><td>$30</td><td><input type="number" class="item-calc" data-price="30" value="0" min="0"></td></tr>
-                    <tr><td>Piezas Separadas</td><td>$300</td><td><input type="number" class="item-calc" data-price="300" value="0" min="0"></td></tr>
-                </table>
-            </div>
+        <div class="input-group">
+            <select id="categorySelect">
+                <option value="Supermercado">🛒 Super</option>
+                <option value="Viajes">🧳 Viaje</option>
+                <option value="Ropa">👕 Ropa</option>
+                <option value="Varios">📌 Varios</option>
+            </select>
+            <input type="text" id="itemInput" placeholder="Agregar elemento..." onkeypress="if(event.key==='Enter') window.addItem()">
         </div>
 
-        <!-- Columna Derecha: Total y Cronómetro Debajo -->
-        <div>
-            <!-- Sección del Total -->
-            <div class="total-section card">
-                <h3>Total a Transferir / Cobrar</h3>
-                <div class="total-amount" id="totalDisplay">$0</div>
-                <button class="btn" onclick="resetForm()">Reiniciar Calculadora</button>
-            </div>
-
-            <!-- Control de Horas Semanales (Debajo del Total) -->
-            <div class="card" style="margin-top: 20px;">
-                <h2>Control de Horas</h2>
-                <div class="timer-display" id="timerDisplay">00:20:00</div>
-                <div class="btn-group">
-                    <button class="btn" id="startBtn" onclick="startTimer()">Iniciar</button>
-                    <button class="btn" id="pauseBtn" onclick="pauseTimer()">Pausar</button>
-                    <button class="btn btn-danger" onclick="resetTimer()">Reiniciar</button>
-                    <button class="btn" onclick="saveWeek()">Guardar Semana</button>
-                </div>
-            </div>
+        <div class="btn-actions">
+            <button class="btn-add" onclick="window.addItem()">Agregar</button>
+            <button class="btn-camera" onclick="document.getElementById('cameraInput').click()">
+                📷 Escanear
+            </button>
         </div>
 
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display: none;" onchange="window.scanListWithOCR(event)">
+
+        <div id="ocrStatus">✨ Leyendo la foto...</div>
+
+        <div id="listsContainer"></div>
     </div>
 
-    <!-- SECCIÓN INFERIOR: Historial de Semanas Guardadas -->
-    <div class="card" style="margin-top: 30px;">
-        <h2>Historial de Horas Acumuladas por Semana</h2>
-        <table id="historyTable">
-            <tr>
-                <th>Semana / Fecha</th>
-                <th>Tiempo Acumulado</th>
-                <th>Acción</th>
-            </tr>
-            <!-- Se llena dinámicamente -->
-        </table>
-    </div>
-    
-    <div class="note">
-        (Todo lo que no sea tuning lo cobran a su cuenta, o sea les transfieren los clientes)
-    </div>
-</div>
+    <!-- Firebase y Lógica -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-<script>
-    // --- LÓGICA DE PRECIOS ---
-    const inputs = document.querySelectorAll('.item-calc');
-    const totalDisplay = document.getElementById('totalDisplay');
+        const firebaseConfig = {
+            apiKey: "AIzaSyCFgIK9iOHzeFIbIHTs2yhyczgkvM18mPA",
+            authDomain: "milista-74731.firebaseapp.com",
+            databaseURL: "https://milista-74731-default-rtdb.firebaseio.com",
+            projectId: "milista-74731",
+            storageBucket: "milista-74731.firebasestorage.app",
+            messagingSenderId: "1074854652654",
+            appId: "1:1074854652654:web:ed581010a236e8d2d3e1ff"
+        };
 
-    function calculateTotal() {
-        let total = 0;
-        inputs.forEach(input => {
-            const price = parseFloat(input.dataset.price) || 0;
-            const quantity = parseInt(input.value) || 0;
-            total += price * quantity;
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const itemsRef = ref(db, 'items');
+
+        let rawItems = {};
+
+        onValue(itemsRef, (snapshot) => {
+            rawItems = snapshot.val() || {};
+            render();
         });
-        totalDisplay.textContent = '$' + total.toLocaleString();
-    }
 
-    inputs.forEach(input => {
-        input.addEventListener('input', calculateTotal);
-    });
+        window.addItem = function(customText = null) {
+            const textInput = document.getElementById('itemInput');
+            const categorySelect = document.getElementById('categorySelect');
+            const text = customText || textInput.value.trim();
+            const category = categorySelect.value;
 
-    function resetForm() {
-        inputs.forEach(input => input.value = 0);
-        calculateTotal();
-    }
+            if (text === '') return;
 
-    // --- LÓGICA DEL CRONÓMETRO Y HORAS ---
-    let seconds = localStorage.getItem('afterlife_seconds') !== null ? parseInt(localStorage.getItem('afterlife_seconds')) : 1200;
-    let timerInterval = null;
-    let isRunning = false;
+            push(itemsRef, {
+                text: text,
+                category: category,
+                completed: false
+            });
 
-    const timerDisplay = document.getElementById('timerDisplay');
+            if (!customText) textInput.value = '';
+        };
 
-    function updateTimerDisplay() {
-        let hrs = Math.floor(seconds / 3600);
-        let mins = Math.floor((seconds % 3600) / 60);
-        let secs = seconds % 60;
-        timerDisplay.textContent = 
-            (hrs < 10 ? "0" : "") + hrs + ":" +
-            (mins < 10 ? "0" : "") + mins + ":" +
-            (secs < 10 ? "0" : "") + secs;
-    }
+        window.scanListWithOCR = async function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-    function startTimer() {
-        if (!isRunning) {
-            isRunning = true;
-            timerInterval = setInterval(() => {
-                seconds++;
-                localStorage.setItem('afterlife_seconds', seconds);
-                updateTimerDisplay();
-            }, 1000);
+            const status = document.getElementById('ocrStatus');
+            status.style.display = 'block';
+            status.textContent = '✨ Procesando la imagen...';
+
+            try {
+                const result = await Tesseract.recognize(
+                    file,
+                    'spa',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text') {
+                                status.textContent = `✨ Leyendo imagen: ${Math.round(m.progress * 100)}%`;
+                            }
+                        }
+                    }
+                );
+
+                const lines = result.data.text.split('\n');
+                let count = 0;
+
+                lines.forEach(line => {
+                    const cleanLine = line.trim().replace(/^[-*•\d.\s]+/, '');
+                    if (cleanLine.length > 1) {
+                        window.addItem(cleanLine);
+                        count++;
+                    }
+                });
+
+                status.textContent = `✨ ¡Listo! Se agregaron ${count} elementos.`;
+                setTimeout(() => { status.style.display = 'none'; }, 3000);
+            } catch (error) {
+                alert("Error al procesar la imagen: " + error.message);
+                status.style.display = 'none';
+            }
+
+            event.target.value = '';
+        };
+
+        window.toggleItem = function(id) {
+            const currentStatus = rawItems[id].completed;
+            update(ref(db, 'items/' + id), {
+                completed: !currentStatus
+            });
+        };
+
+        window.deleteItem = function(id) {
+            remove(ref(db, 'items/' + id));
+        };
+
+        function render() {
+            const container = document.getElementById('listsContainer');
+            container.innerHTML = '';
+
+            const itemList = Object.keys(rawItems).map(key => ({
+                id: key,
+                ...rawItems[key]
+            }));
+
+            const categories = [...new Set(itemList.map(i => i.category))];
+
+            categories.forEach(cat => {
+                const section = document.createElement('div');
+                section.className = 'category-section';
+
+                const title = document.createElement('div');
+                title.className = 'category-title';
+                title.textContent = cat;
+                section.appendChild(title);
+
+                const ul = document.createElement('ul');
+
+                const catItems = itemList.filter(i => i.category === cat);
+                
+                catItems.forEach(item => {
+                    const li = document.createElement('li');
+                    if (item.completed) li.classList.add('completed');
+
+                    li.innerHTML = `
+                        <div class="item-content" onclick="window.toggleItem('${item.id}')">
+                            <div class="checkbox"></div>
+                            <span class="item-text">${item.text}</span>
+                        </div>
+                        <button class="delete-btn" onclick="window.deleteItem('${item.id}')">✕</button>
+                    `;
+                    ul.appendChild(li);
+                });
+
+                section.appendChild(ul);
+                container.appendChild(section);
+            });
         }
-    }
-
-    function pauseTimer() {
-        isRunning = false;
-        clearInterval(timerInterval);
-    }
-
-    function resetTimer() {
-        pauseTimer();
-        seconds = 0;
-        localStorage.setItem('afterlife_seconds', seconds);
-        updateTimerDisplay();
-    }
-
-    // --- GUARDAR Y SEPARAR POR SEMANA ---
-    function loadHistory() {
-        let history = JSON.parse(localStorage.getItem('afterlife_history')) || [];
-        let table = document.getElementById('historyTable');
-        table.innerHTML = `<tr><th>Semana / Fecha</th><th>Tiempo Acumulado</th><th>Acción</th></tr>`;
-        
-        history.forEach((item, index) => {
-            let row = table.insertRow();
-            row.innerHTML = `<td>${item.date}</td><td>${item.time}</td><td><button class="btn btn-danger" style="padding: 2px 8px; font-size: 0.8rem;" onclick="deleteHistory(${index})">Eliminar</button></td>`;
-        });
-    }
-
-    function saveWeek() {
-        if (seconds === 0) {
-            alert("El cronómetro está en cero, no hay horas para guardar.");
-            return;
-        }
-        let hrs = Math.floor(seconds / 3600);
-        let mins = Math.floor((seconds % 3600) / 60);
-        let secs = seconds % 60;
-        let timeString = `${hrs}h ${mins}m ${secs}s`;
-        
-        let now = new Date();
-        let dateString = `Semana del ${now.toLocaleDateString()}`;
-
-        let history = JSON.parse(localStorage.getItem('afterlife_history')) || [];
-        history.unshift({ date: dateString, time: timeString });
-        localStorage.setItem('afterlife_history', JSON.stringify(history));
-
-        loadHistory();
-        resetTimer();
-        alert("¡Progreso de la semana guardado con éxito!");
-    }
-
-    function deleteHistory(index) {
-        let history = JSON.parse(localStorage.getItem('afterlife_history')) || [];
-        history.splice(index, 1);
-        localStorage.setItem('afterlife_history', JSON.stringify(history));
-        loadHistory();
-    }
-
-    // Inicializar al cargar la página
-    updateTimerDisplay();
-    loadHistory();
-</script>
-
+    </script>
 </body>
 </html>
